@@ -1,0 +1,122 @@
+<?php
+	header("Content-Type: application/json; charset=UTF-8");
+	header("Access-Control-Allow-Methods: POST");
+	header("Access-Control-Max-Age: 3600");
+	header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+	include_once('../sitemaster.php');
+	
+	$result =array();
+	$data = json_decode(file_get_contents("php://input"));
+	
+	$apiKey = isset($data->apiKey) ? mysqli_real_escape_string($con,$data->apiKey) :  "";
+	$env_name = isset($data->envName) ? mysqli_real_escape_string($con,$data->envName) :  "";
+	$chaos_name = isset($data->chaosName) ? mysqli_real_escape_string($con,$data->chaosName) :  "";
+	$target_name = isset($data->targetName) ? mysqli_real_escape_string($con,$data->targetName) :  "";
+	
+	$service_name = isset($data->serviceName) ? mysqli_real_escape_string($con,$data->serviceName) :  "";
+	$payload_value = isset($data->payloadValue) ? mysqli_real_escape_string($con,$data->payloadValue) :  "";
+	$psid = isset($data->psid) ? mysqli_real_escape_string($con,$data->psid) :  "";
+	
+	$projectID=mysqli_fetch_row(mysqli_query($con,"select id from project_info where api_token='".$apiKey."' and status='Active' and (project_owner='".$psid."' or find_in_set('".$psid."',team_members)) and find_in_set((SELECT id FROM env_master where name='IKP'),env_ids)"));
+	$projectID=$projectID[0];
+	
+	//$result[] = array("status" => $apiKey, "msg" => $reportName); 		
+	//$json = array("info" => $result);
+	
+	if(!empty($apiKey) && !empty($chaos_name) && !empty($target_name) && !empty($env_name) && !empty($service_name) && !empty($payload_value) && !empty($psid))
+	{
+		if($projectID!="")
+		{
+			if($env_name=="IKP")
+			{
+				if($chaos_name=="Kill_Running_POD" || $chaos_name=="Scale_Service" || $chaos_name=="CPU_Surge")
+				{
+					$validTarget=false;
+					$targetInfo=mysqli_query($con,"select id from ikp_config where project_id='".$projectID."' and status='Active' and connectivity_flag='Connected'");
+					while($rw_targetInfo=mysqli_fetch_row($targetInfo))
+					{
+						if($rw_targetInfo[0]==$target_name)
+						{
+							$validTarget=true;
+						}
+					}
+					
+					if($validTarget==true)
+					{
+						$data_col="";
+						$data_row="";
+										
+						if($chaos_name=="Kill_Running_POD" || $chaos_name=="Scale_Service" || $chaos_name=="CPU_Surge")
+						{
+							$data_row=mysqli_fetch_row(mysqli_query($con,"select dep_name from ikp_config where id='".$target_name."'"));
+							$data_col=explode(",",$data_row[0]);
+						}
+											
+						if(count($data_row)!="0")
+						{
+							$vaildService=false;
+							foreach($data_col as $item)
+							{
+								if($item==$service_name)
+								{
+									$vaildService=true;
+								}
+							}
+							
+							if($vaildService==true)
+							{
+								$para_value=$service_name."|".$payload_value;
+								if(mysqli_query($con,"insert into chaos_log (project_id,chaos_name,env_name,target_name,username,rmk,executer_platform) values ('".$projectID."','".$chaos_name."','".$env_name."','".$target_name."','".$psid."','".$para_value."','API')"))
+								{
+									$result[] = array("status" => 200, "msg" => "Chaos Experiment Executed Successfully!!! Please visit platform for Report.");
+								}
+								else
+								{
+									$result[] = array("status" => 500, "msg" => "Something Went Wrong!!!");
+								}						
+							}
+							else
+							{
+								$result[] = array("status" => 406, "msg" => "Unauthorized Access");
+							}							
+						}
+						else
+						{
+							$result[] = array("status" => 405, "msg" => "Unauthorized Access");
+						}
+					}
+					else
+					{
+						$result[] = array("status" => 404, "msg" => "Unauthorized Access");
+					}
+				}
+				else
+				{
+					$result[] = array("status" => 403, "msg" => "Unauthorized Access");
+				}
+			}
+			else
+			{
+				$result[] = array("status" => 402, "msg" => "Unauthorized Access"); 
+			}
+			
+			$json = array("info" => $result);
+		}
+		else
+		{
+			$result[] = array("status" => 401, "msg" => "Unauthorized Access"); 		
+			$json = array("info" => $result);
+		}
+	}
+	else
+	{
+		$result[] = array("status" => 400, "msg" => "Bad Request"); 		
+		$json = array("info" => $result);
+	}
+	
+	
+	@mysqli_close($con);
+
+	/* Output header */
+	header('Content-type: application/json');
+	echo json_encode($json);
