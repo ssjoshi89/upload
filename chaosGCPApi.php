@@ -11,17 +11,15 @@
 	$apiKey = isset($data->apiKey) ? mysqli_real_escape_string($con,$data->apiKey) :  "";
 	$env_name = isset($data->envName) ? mysqli_real_escape_string($con,$data->envName) :  "";
 	$chaos_name = isset($data->chaosName) ? mysqli_real_escape_string($con,$data->chaosName) :  "";
-	$target_name = isset($data->targetName) ? mysqli_real_escape_string($con,$data->targetName) :  "";
+	$cluster = isset($data->clusterName) ? mysqli_real_escape_string($con,$data->clusterName) :  "";
+	$nm = isset($data->namespaceName) ? mysqli_real_escape_string($con,$data->namespaceName) :  "";
 	
 	$service_name = isset($data->serviceName) ? mysqli_real_escape_string($con,$data->serviceName) :  "";
 	$payload_value = isset($data->payloadValue) ? mysqli_real_escape_string($con,$data->payloadValue) :  "";
-	$psid = isset($data->psid) ? mysqli_real_escape_string($con,$data->psid) :  "";
+	$psid = isset($data->run_by) ? mysqli_real_escape_string($con,$data->run_by) :  "";
 	
-	$projectID=mysqli_fetch_row(mysqli_query($con,"select id from project_info where api_token='".$apiKey."' and status='Active' and (project_owner='".$psid."' or find_in_set('".$psid."',team_members)) and find_in_set((SELECT id FROM env_master where name='GCP'),env_ids)")"));
+	$projectID=mysqli_fetch_row(mysqli_query($con,"select id from project_info where api_token='".$apiKey."' and status='Active' and (project_owner='".$psid."' or find_in_set('".$psid."',team_members)) and find_in_set((SELECT id FROM env_master where name='GCP'),env_ids)")));
 	$projectID=$projectID[0];
-	
-	//$result[] = array("status" => $apiKey, "msg" => $reportName); 		
-	//$json = array("info" => $result);
 	
 	if(!empty($apiKey) && !empty($chaos_name) && !empty($target_name) && !empty($env_name) && !empty($service_name) && !empty($payload_value) && !empty($psid))
 	{
@@ -33,6 +31,9 @@
 			}
 			elseif($env_name=="GCP-GKE")
 			{
+				$target_name=mysqli_fetch_row(mysqli_query($con,"select id from gcp_gke_config where project_id='".$projectID."' and cluster='".$cluster."' and namespace='".$nm."' status='Active' and connectivity_flag='Connected'"));
+				$target_name=$target_name[0];
+			
 				if($chaos_name=="Kill_Running_POD" || $chaos_name=="Scale_Service" || $chaos_name=="CPU_Surge" || $chaos_name=="Delete_Node")
 				{
 					$validTarget=false;
@@ -88,27 +89,27 @@
 							}
 							else
 							{
-								$result[] = array("status" => 406, "msg" => "Unauthorized Access");
+								$result[] = array("status" => 406, "msg" => "Unknown Service Selection!!!");
 							}							
 						}
 						else
 						{
-							$result[] = array("status" => 405, "msg" => "Unauthorized Access");
+							$result[] = array("status" => 405, "msg" => "No Services Mapped with Selected Target");
 						}
 					}
 					else
 					{
-						$result[] = array("status" => 404, "msg" => "Unauthorized Access");
+						$result[] = array("status" => 404, "msg" => "Invaild Target Selection!!!");
 					}
 				}
 				else
 				{
-					$result[] = array("status" => 403, "msg" => "Unauthorized Access");
+					$result[] = array("status" => 403, "msg" => "Unknown Chaos Experiment Selected!!!");
 				}
 			}
 			else
 			{
-				$result[] = array("status" => 402, "msg" => "Unauthorized Access"); 
+				$result[] = array("status" => 402, "msg" => "Unknown Environment Selection!!!"); 
 			}
 			
 			$json = array("info" => $result);
@@ -121,7 +122,7 @@
 	}
 	else
 	{
-		$result[] = array("status" => 400, "msg" => "Bad Request"); 		
+		$result[] = array("status" => 400, "msg" => "Request Parameters Should Not Empty!!!"); 		
 		$json = array("info" => $result);
 	}
 	

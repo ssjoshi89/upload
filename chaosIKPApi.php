@@ -86,7 +86,7 @@
 						}
 						else
 						{
-							$result[] = array("status" => 405, "msg" => "Unauthorized Access");
+							$result[] = array("status" => 405, "msg" => "No Services Mapped with Selected Target");
 						}
 					}
 					else
