@@ -18,10 +18,10 @@
 	$payload_value = isset($data->payloadValue) ? mysqli_real_escape_string($con,$data->payloadValue) :  "";
 	$psid = isset($data->run_by) ? mysqli_real_escape_string($con,$data->run_by) :  "";
 	
-	$projectID=mysqli_fetch_row(mysqli_query($con,"select id from project_info where api_token='".$apiKey."' and status='Active' and (project_owner='".$psid."' or find_in_set('".$psid."',team_members)) and find_in_set((SELECT id FROM env_master where name='GCP'),env_ids)")));
+	$projectID=mysqli_fetch_row(mysqli_query($con,"select id from project_info where api_token='".$apiKey."' and status='Active' and sa_name='".$psid."' and find_in_set((SELECT id FROM env_master where name='GCP'),env_ids)"));
 	$projectID=$projectID[0];
 	
-	if(!empty($apiKey) && !empty($chaos_name) && !empty($target_name) && !empty($env_name) && !empty($service_name) && !empty($payload_value) && !empty($psid))
+	if(!empty($apiKey) && !empty($chaos_name) && !empty($cluster) && !empty($nm) && !empty($env_name) && !empty($service_name) && !empty($payload_value) && !empty($psid))
 	{
 		if($projectID!="")
 		{
@@ -31,22 +31,12 @@
 			}
 			elseif($env_name=="GCP-GKE")
 			{
-				$target_name=mysqli_fetch_row(mysqli_query($con,"select id from gcp_gke_config where project_id='".$projectID."' and cluster='".$cluster."' and namespace='".$nm."' status='Active' and connectivity_flag='Connected'"));
+				$target_name=mysqli_fetch_row(mysqli_query($con,"select id from gcp_gke_config where project_id='".$projectID."' and cluster='".$cluster."' and namespace='".$nm."' and status='Active' and connectivity_flag='Connected'"));
 				$target_name=$target_name[0];
 			
 				if($chaos_name=="Kill_Running_POD" || $chaos_name=="Scale_Service" || $chaos_name=="CPU_Surge" || $chaos_name=="Delete_Node")
 				{
-					$validTarget=false;
-					$targetInfo=mysqli_query($con,"select id from gcp_gke_config where project_id='".$projectID."' and status='Active' and connectivity_flag='Connected'");
-					while($rw_targetInfo=mysqli_fetch_row($targetInfo))
-					{
-						if($rw_targetInfo[0]==$target_name)
-						{
-							$validTarget=true;
-						}
-					}
-					
-					if($validTarget==true)
+					if($target_name!="")
 					{
 						$data_col="";
 						$data_row="";
@@ -125,7 +115,6 @@
 		$result[] = array("status" => 400, "msg" => "Request Parameters Should Not Empty!!!"); 		
 		$json = array("info" => $result);
 	}
-	
 	
 	@mysqli_close($con);
 
