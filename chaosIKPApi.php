@@ -18,34 +18,24 @@
 	$payload_value = isset($data->payloadValue) ? mysqli_real_escape_string($con,$data->payloadValue) :  "";
 	$psid = isset($data->run_by) ? mysqli_real_escape_string($con,$data->run_by) :  "";
 	
-	$projectID=mysqli_fetch_row(mysqli_query($con,"select id from project_info where api_token='".$apiKey."' and status='Active' and (project_owner='".$psid."' or find_in_set('".$psid."',team_members)) and find_in_set((SELECT id FROM env_master where name='IKP'),env_ids)"));
+	$projectID=mysqli_fetch_row(mysqli_query($con,"select id from project_info where api_token='".$apiKey."' and status='Active' and sa_name='".$psid."' and find_in_set((SELECT id FROM env_master where name='IKP'),env_ids)"));
 	$projectID=$projectID[0];
 	
 	//$result[] = array("status" => $apiKey, "msg" => $reportName); 		
 	//$json = array("info" => $result);
 	
-	if(!empty($apiKey) && !empty($chaos_name) && !empty($target_name) && !empty($env_name) && !empty($service_name) && !empty($payload_value) && !empty($psid))
+	if(!empty($apiKey) && !empty($chaos_name) && !empty($cluster) && !empty($nm) && !empty($env_name) && !empty($service_name) && !empty($payload_value) && !empty($psid))
 	{
 		if($projectID!="")
 		{
-			$target_name=mysqli_fetch_row(mysqli_query($con,"select id from ikp_config where project_id='".$projectID."' and cluster='".$cluster."' and namespace='".$nm."' status='Active' and connectivity_flag='Connected'"));
+			$target_name=mysqli_fetch_row(mysqli_query($con,"select id from ikp_config where project_id='".$projectID."' and cluster='".$cluster."' and namespace='".$nm."' and status='Active' and connectivity_flag='Connected'"));
 			$target_name=$target_name[0];
 	
 			if($env_name=="IKP")
 			{
 				if($chaos_name=="Kill_Running_POD" || $chaos_name=="Scale_Service" || $chaos_name=="CPU_Surge")
 				{
-					$validTarget=false;
-					$targetInfo=mysqli_query($con,"select id from ikp_config where project_id='".$projectID."' and status='Active' and connectivity_flag='Connected'");
-					while($rw_targetInfo=mysqli_fetch_row($targetInfo))
-					{
-						if($rw_targetInfo[0]==$target_name)
-						{
-							$validTarget=true;
-						}
-					}
-					
-					if($validTarget==true)
+					if($target_name!="")
 					{
 						$data_col="";
 						$data_row="";

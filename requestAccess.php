@@ -290,7 +290,7 @@
 		{
 			if($countItems[0]=="0")
 			{
-				if(mysqli_query($con,"insert into project_info (name,team_name,project_owner,env_ids,eim_id,gbgf,service_line,api_token) values ('".$project_title."','".$team_name."','".$adm_psid."','".$env_ids."','".$eim_id."','".$gbgf."','".$service_line."',concat('ca_',SUBSTR(MD5(RAND()),1,47)))"))
+				if(mysqli_query($con,"insert into project_info (name,team_name,project_owner,env_ids,eim_id,gbgf,service_line,api_token,sa_name) values ('".$project_title."','".$team_name."','".$adm_psid."','".$env_ids."','".$eim_id."','".$gbgf."','".$service_line."',concat('ca_',SUBSTR(MD5(RAND()),1,47))),concat('chaos_sa_',SUBSTR(MD5(RAND()),1,10)))"))
 				{
 					echo "<script>alert('Request Processed Sucessfully!!!');</script>";
 					echo '<script>window.location.href="index.php";</script>';
