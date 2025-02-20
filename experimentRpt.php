@@ -82,43 +82,25 @@
                                                     <tr>
                                                         <th>Experiment Name</th>
 														<th>Environments</th>
-														<th>Target Name</th>
-														<th>Service Name</th>
 														<th>Run Count</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     
 													<?php
-														$data_row=mysqli_query($con,"SELECT chaos_name,env_name,
-
-CASE
-    WHEN env_name='GCP-GKE' THEN (SELECT concat(cluster,' | ',namespace) FROM gcp_gke_config where id=chaos_log.target_name)
-    WHEN env_name='GCP-VM' THEN (SELECT concat(mgmt_vm_name,' | ',mgmt_vm_type) FROM gcp_vm_config where id=chaos_log.target_name)
-	WHEN env_name='IKP' THEN (SELECT concat(cluster,' | ',namespace) FROM ikp_config where id=chaos_log.target_name)
-	WHEN env_name='On-Premise' THEN (SELECT concat(mgmt_vm_name,' | ',mgmt_vm_type) FROM on_prem_config where id=chaos_log.target_name)
-END as 'target',rmk,count(*) as 'count'
+														$data_row=mysqli_query($con,"SELECT distinct chaos_name,env_name,count(*) as 'count'
 
  FROM chaos_log
-where project_id='".$_POST['team']."' 
+where project_id='".$_POST['team']."'  
 group by chaos_name
 order by env_name,id");
 														while($rw=mysqli_fetch_row($data_row))
 														{
-															$arr=explode('|',$rw[3]);
-															
-															if(is_numeric($arr[0]))
-															{
-																$arr[0]="";
-															}
-															
 															echo '
 																<tr>
 																	<td>'.$rw[0].'</td>
 																	<td>'.$rw[1].'</td>
-																	<td>'.$rw[2].'</td>
-																	<td>'.$arr[0].'</td>
-																	<td>'.$rw[4].'</td>																	
+																	<td>'.$rw[2].'</td>											
 																</tr>
 																';																
 														}
